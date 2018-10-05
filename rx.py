@@ -4,14 +4,19 @@ import os
 import logging
 import time
 import pickle
+import json
 import gzip
+import base64
+import multiprocessing
 
+from websocket import create_connection
 import paho.mqtt.client as mqtt
 
 import alib3.acrypt as acrypt
+from alib3.acrypt import RSAUtilize
 
-CONF = pickle.load(open('user.conf', 'rb'))
-PATH_FRIENDS = 'friends/'
+SERVER = json.load(open('server.json', 'r'))
+PATH_FRIENDS = './friends/'
 
 # Message formate:
 # +----+----+----+----+--------+--------------------+
@@ -47,9 +52,13 @@ class Client():
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.connect(host, port, timeout)
+        self.ws = create_connection(('ws://%s:%s' % (SERVER['local_host'], SERVER['local_port'])))
         self.channel = ''
         self.psk = psk
-    
+
+    def wsNotification(self, content):
+        self.ws.send(content)
+
     def updateChannel(self, channel):
         self.channel = channel
         self.client.subscribe(self.channel)
@@ -81,27 +90,68 @@ class Client():
 
         stype = msg[298:299]
 
-        addition = msg[299:331]
+        addition = msg[299:331].replace(b'\x99', b'')
 
         payload = msg[331:]
 
-        if os.path.exists(PATH_FRIENDS+'%s@%s'%(sender, self.channel)) == False:
-            logging.warn('*** [%s] CANNOT BE VERIFIED ***' % sender)
+        idFile = PATH_FRIENDS + '%s@%s' % (sender, self.channel)
+        if os.path.exists(idFile) == False:
+            logging.warning('*** UNKNOWN USER ***')
+        else:
+            try:
+                recv_md5 = RSAUtilize.decrypt(pickle.load(open(idFile, 'rb')), sign)
+                calc_md5 = acrypt.str2md5(msg[32:42] + payload)
+                if recv_md5 != calc_md5:
+                    logging.error('*** SIGNATURE VERIFY FAILED ***\n')
+                    print(recv_md5)
+                    print(calc_md5)
+                    return -1
+            except:
+                logging.error('*** FAKE USER ***\n')
+                return -1
         
         if stype == b'\x00':
-            print(payload.decode('utf-8'))
+            print('=== PLAIN TEXT ===')
+            origin = payload.decode('utf-8')
+            print(origin)
+            toInterface = json.dumps(
+                {'type': 0x04,
+                'ch': self.channel,
+                'from': sender,
+                'msg': origin}
+                )
+            self.wsNotification(toInterface)
         
         elif stype == b'\x01':
-            print('[Get a file]')
-            writeout('test', payload)
+            print('=== FILE ===')
+            fname = base64.b64decode(addition)
+            print('Name: %s' % fname.decode('utf-8'))
+            writeout(fname, payload)
         
+        elif stype == b'\x02':
+            if os.path.exists(idFile) == False:
+                print('=== FOLLOWING REQUEST ===')
+                print('Channel: %s' % self.channel)
+                print('   User: %s' % sender)
+                print('PublicH: %s' % acrypt.str2md5(payload).decode())
+                
+                newPBK = pickle.loads(payload)
+                pickle.dump(newPBK, open(idFile, 'wb'))
         else:
             print(msg)
-        
         print('')
 
     def loop(self):
         self.client.loop_forever()
+
+def recvStart(ch, psk=b'henChatQ'):
+    print('Listening on %s:%d...' % (SERVER['host'], SERVER['port']))
+    try:
+        c = Client(SERVER['host'], SERVER['port'], SERVER['timeout'], psk)
+        c.updateChannel(ch)
+        c.loop()
+    except:
+        logging.error('*** ERROR PARAMETER ***')
 
 if __name__ == '__main__':
     import sys
@@ -110,7 +160,8 @@ if __name__ == '__main__':
         psk = sys.argv[2].encode('utf-8')
     else:
         psk = b'henChatQ'
-    print('Listening on %s:%d...' % (CONF['server'], CONF['port']))
-    c = Client(CONF['server'], CONF['port'], CONF['timeout'], psk)
-    c.updateChannel(ch)
-    c.loop()
+    # print('Listening on %s:%d...' % (SERVER['host'], SERVER['port']))
+    # c = Client(SERVER['host'], SERVER['port'], SERVER['timeout'], psk)
+    # c.updateChannel(ch)
+    # c.loop()
+    recvStart(ch, psk)

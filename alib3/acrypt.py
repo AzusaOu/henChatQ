@@ -51,20 +51,17 @@ class RSAGen:
 			return self.pbk, self.pvk
 
 class RSAUtilize:
-	def __init__(self):
-		pass
-
-	def loadKeyFromPEM(self, fname, pbk=True):
+	def loadKeyFromPEM(fname, pbk=True):
 		with open(fname, 'rb') as o:
 			if pbk:
 				return rsa.PublicKey.load_pkcs1(o.read())
 			else:
 				return rsa.PrivateKey.load_pkcs1(o.read())
 
-	def encrypt(self, key, msg):
+	def encrypt(key, msg):
 		return rsa.encrypt(msg, key)
 
-	def decrypt(self, key, msg):
+	def decrypt(key, msg):
 		return rsa.decrypt(msg, key)
 
 class AES256:
@@ -73,7 +70,7 @@ class AES256:
 		h.update(pwd)
 		key = h.hexdigest().encode()
 		iv = Random.new().read(AES.block_size)
-		cipher = AES.new(key[:32], AES.MODE_CFB, iv)
+		cipher = AES.new(key[:32], AES.MODE_GCM, iv)
 		msg = iv + cipher.encrypt((msg))
 		return msg
 	
@@ -82,6 +79,6 @@ class AES256:
 		h.update(pwd)
 		key = h.hexdigest().encode()
 		iv = msg[:AES.block_size]
-		decipher = AES.new(key[:32], AES.MODE_CFB, iv)
+		decipher = AES.new(key[:32], AES.MODE_GCM, iv)
 		ori = decipher.decrypt((msg[AES.block_size:]))
 		return ori
