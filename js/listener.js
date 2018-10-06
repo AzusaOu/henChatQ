@@ -1,75 +1,42 @@
 // ===== Button Events =============================
 
-// -- Click "New ID"
-$('#btn_auto').click(function () {
+// // -- Click "ETE"
+// $('#btn_encrypt').click(function () {
 
-	$('#btn_auto').prop('disabled', true);
-	$('#btn_enter').prop('disabled', true);
-	$('#s_pvk').val(randomStr(64));
-	showMsg('A new key will be generated. Please save it by yourself.', 'gray');
-	$('#btn_enter').click();
-});
+// 	var receiver = '';
+// 	for (c of contacts) {
+// 		if ($(`#${c}`).prop('checked')) {
+// 			receiver = c;
+// 		}
+// 	}
+// 	if (receiver === '') {
+// 		alert('There is no receiver in the list...');
+// 		return -1;
+// 	}
 
+// 	$('#s_to').prop('disabled', true);					// Forbid multi-receiver
+// 	$('#btn_encrypt').prop('disabled', true);			// Forbid ETE button
+// 	$('#btn_send').prop('disabled', true);				// Temporary block ETE button
+// 	$(`#${receiver}`).prop('checked', true);						// Fix receiver as the 1st receiver
+// 	$(`#${receiver}`).prop('disabled', true);
 
-// -- Click "Login"
-$('#btn_enter').click(function () {
-	$('#btn_auto').prop('disabled', true);
-	$('#btn_enter').prop('disabled', true);
+// 	var now = new Date();
+// 	var keyExchangeRequest = {
+// 		from: $('#s_pbk').val(),
+// 		to: [receiver],
+// 		type: 'msg',
+// 		msg: selfPublicKey,
+// 		key: 'true',
+// 		token: sToken,
+// 		time: now.getTime().toString()
+// 	}
 
-	// -- Check if pvk's formate is correct
-	if ($('#s_pvk').val().length === 64) {
+// 	ws.send(JSON.stringify(keyExchangeRequest));
+// 	while (publicKeyCache != '@');						// Wait for public key from receiver
+// 	$('#btn_send').prop('disabled', false);				// Send button recovery
 
-		// -- Keygen
-		[selfPrivateKey, selfPublicKey] = (function() {
-			var selfRSA = cryptico.generateRSAKey($('#s_pvk').val(), 1024);		// And it would also be used to decrypt
-			return [selfRSA, cryptico.publicKeyString(selfRSA)];				// The later is used to encrypt plain text
-		})();
-
-		newSession(DEFAULT_SERVER);
-
-	} else {
-		alert('Invalid key.');
-	}
-});
-
-
-// -- Click "ETE"
-$('#btn_encrypt').click(function () {
-
-	var receiver = '';
-	for (c of contacts) {
-		if ($(`#${c}`).prop('checked')) {
-			receiver = c;
-		}
-	}
-	if (receiver === '') {
-		alert('There is no receiver in the list...');
-		return -1;
-	}
-
-	$('#s_to').prop('disabled', true);					// Forbid multi-receiver
-	$('#btn_encrypt').prop('disabled', true);			// Forbid ETE button
-	$('#btn_send').prop('disabled', true);				// Temporary block ETE button
-	$(`#${receiver}`).prop('checked', true);						// Fix receiver as the 1st receiver
-	$(`#${receiver}`).prop('disabled', true);
-
-	var now = new Date();
-	var keyExchangeRequest = {
-		from: $('#s_pbk').val(),
-		to: [receiver],
-		type: 'msg',
-		msg: selfPublicKey,
-		key: 'true',
-		token: sToken,
-		time: now.getTime().toString()
-	}
-
-	ws.send(JSON.stringify(keyExchangeRequest));
-	while (publicKeyCache != '@');						// Wait for public key from receiver
-	$('#btn_send').prop('disabled', false);				// Send button recovery
-
-	encryptMode = true;
-});
+// 	encryptMode = true;
+// });
 
 
 // -- Click "Send"
@@ -226,16 +193,6 @@ $('#btn_send').click(function () {
 	}
 });
 			 
-
-// -- Click "Logout"
-$('#btn_close').click(function () {
-	ws.close();
-	if (encryptMode) {
-		location.reload();
-	}
-});
-
-
 // ===== Key Events ===============================
 
 // -- Press "Ctrl+Enter" to send
@@ -252,17 +209,17 @@ document.onkeydown = function (e) {
 // ===== Add Contacts ===============================
 var channels = [];
 function addChannel() {
-	var newChannel = $('#s_to').val();
+	var newChannel = $('#s_newChannel').val();
 	if (newChannel === '' || channels.indexOf(newChannel) != -1) {
 		return -1;
 	}
 	channels.push(newChannel);
 	$('#receiverChoice').prepend(`<input type="checkbox" id="${newChannel}" checked="checked"/>${newChannel}<br>`);
-	$('#s_to').val('');
+	$('#s_newChannel').val('');
 	var cmd = {
 		'type': 0x03,
 		'ch': newChannel,
-		'psk': 'henChatQ'
+		'psk': $('#s_psk').val()
 	};
 	ws.send(JSON.stringify(cmd));
 	console.log(cmd)

@@ -72,7 +72,7 @@ def sendMsg(ch, stype, msg, psk=b'henChatQ', qos=1):
 	client.connect(SERVER['host'], SERVER['port'], SERVER['timeout'])
 	msg = msgGen(stype, msg, psk)
 	if msg:
-		client.publish(str(ch), msg, qos)
+		client.publish(acrypt.str2md5(ch.encode()).decode(), msg, qos)
 		print('%d bytes data has been sent' % int(len(msg)/8))
 	client.disconnect()
 
@@ -84,15 +84,4 @@ if __name__ == '__main__':
         psk = sys.argv[4].encode('utf-8')
     else:
         psk = b'henChatQ'
-    # client = mqtt.Client()
-    # client.connect(SERVER['host'], SERVER['port'], SERVER['timeout'])
-    # msg = msgGen(tp, ms, psk)
-    # if msg:
-    #     client.publish(str(sys.argv[1]), msg, qos=1)
-    #     print('%d bytes data has been sent' % int(len(msg)/8))
-    # client.disconnect()
     sendMsg(ch, tp, ms, psk, 0)
-
-    # sent = gzip.decompress(acrypt.AES256.decrypt(msg, psk))
-    # print(sent)
-    

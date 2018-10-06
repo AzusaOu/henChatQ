@@ -66,19 +66,23 @@ class RSAUtilize:
 
 class AES256:
 	def encrypt(msg, pwd):
-		h = SHA256.new()
-		h.update(pwd)
-		key = h.hexdigest().encode()
+		# h = SHA256.new()
+		# h.update(pwd)
+		# key = h.hexdigest().encode()
+		key = str2md5(pwd)
 		iv = Random.new().read(AES.block_size)
-		cipher = AES.new(key[:32], AES.MODE_GCM, iv)
+		# cipher = AES.new(key[:32], AES.MODE_GCM, iv)
+		cipher = AES.new(key, AES.MODE_GCM, iv)
 		msg = iv + cipher.encrypt((msg))
 		return msg
 	
 	def decrypt(msg, pwd):
-		h = SHA256.new()
-		h.update(pwd)
-		key = h.hexdigest().encode()
+		# h = SHA256.new()
+		# h.update(pwd)
+		# key = h.hexdigest().encode()
+		key = str2md5(pwd)
 		iv = msg[:AES.block_size]
-		decipher = AES.new(key[:32], AES.MODE_GCM, iv)
+		# decipher = AES.new(key[:32], AES.MODE_GCM, iv)
+		decipher = AES.new(key, AES.MODE_GCM, iv)
 		ori = decipher.decrypt((msg[AES.block_size:]))
 		return ori

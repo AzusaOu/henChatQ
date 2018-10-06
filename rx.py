@@ -52,7 +52,10 @@ class Client():
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.connect(host, port, timeout)
-        self.ws = create_connection(('ws://%s:%s' % (SERVER['local_host'], SERVER['local_port'])))
+        try:
+            self.ws = create_connection(('ws://%s:%s' % (SERVER['local_host'], SERVER['local_port'])))
+        except:
+            logging.error('No websocket connection')
         self.channel = ''
         self.psk = psk
 
@@ -61,7 +64,7 @@ class Client():
 
     def updateChannel(self, channel):
         self.channel = channel
-        self.client.subscribe(self.channel)
+        self.client.subscribe(acrypt.str2md5(channel.encode()).decode())
         logging.info('Tune in channel: [%s]' % channel)
 
     def on_connect(self, client, userdata, flags, rc):
@@ -71,6 +74,9 @@ class Client():
             logging.error('Server error!')
     
     def on_message(self, client, userdata, msg):
+        verified = False
+        sameTime = True
+
         timenow = int(time.time())
         print('%d bytes data received' % int(len(msg.payload) / 8))
         try:
@@ -85,6 +91,7 @@ class Client():
         timeStamp = int(msg[32:42])
         if int(timeStamp - timenow) >= 1800:
             logging.error('*** INVALID TIMESTAMP ***')
+            sameTime = False
     
         sign = msg[42:298]
 
@@ -106,6 +113,8 @@ class Client():
                     print(recv_md5)
                     print(calc_md5)
                     return -1
+                else:
+                    verified = True
             except:
                 logging.error('*** FAKE USER ***\n')
                 return -1
@@ -113,12 +122,15 @@ class Client():
         if stype == b'\x00':
             print('=== PLAIN TEXT ===')
             origin = payload.decode('utf-8')
-            print(origin)
+            print(origin+'\n')
             toInterface = json.dumps(
                 {'type': 0x04,
                 'ch': self.channel,
                 'from': sender,
-                'msg': origin}
+                'time': timeStamp,
+                'msg': origin,
+                'verified': verified,
+                'timeCheck': sameTime}
                 )
             self.wsNotification(toInterface)
         
@@ -129,14 +141,25 @@ class Client():
             writeout(fname, payload)
         
         elif stype == b'\x02':
+            print('=== FOLLOWING REQUEST ===')
             if os.path.exists(idFile) == False:
-                print('=== FOLLOWING REQUEST ===')
                 print('Channel: %s' % self.channel)
                 print('   User: %s' % sender)
                 print('PublicH: %s' % acrypt.str2md5(payload).decode())
-                
                 newPBK = pickle.loads(payload)
                 pickle.dump(newPBK, open(idFile, 'wb'))
+                toInterface = json.dumps(
+                    {'type': 0x04,
+                    'ch': self.channel,
+                    'from': sender,
+                    'time': timeStamp,
+                    'msg': '*** ID [%s] HAS BEEN ADDED INTO KONWN LIST ***'%sender,
+                    'verified': verified,
+                    'timeCheck': sameTime}
+                )
+                self.wsNotification(toInterface)
+            else:
+                logging.info('You have added [%s]. Ignore' % sender)
         else:
             print(msg)
         print('')
@@ -144,7 +167,13 @@ class Client():
     def loop(self):
         self.client.loop_forever()
 
+chs = []
+
 def recvStart(ch, psk=b'henChatQ'):
+    if ch in chs:
+        logging.error('Channel [%s] has been listened.' % ch)
+        return -1
+    chs.append(ch)
     print('Listening on %s:%d...' % (SERVER['host'], SERVER['port']))
     try:
         c = Client(SERVER['host'], SERVER['port'], SERVER['timeout'], psk)
@@ -160,8 +189,4 @@ if __name__ == '__main__':
         psk = sys.argv[2].encode('utf-8')
     else:
         psk = b'henChatQ'
-    # print('Listening on %s:%d...' % (SERVER['host'], SERVER['port']))
-    # c = Client(SERVER['host'], SERVER['port'], SERVER['timeout'], psk)
-    # c.updateChannel(ch)
-    # c.loop()
     recvStart(ch, psk)

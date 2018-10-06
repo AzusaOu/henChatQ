@@ -35,16 +35,8 @@ function randomStr(length, symbol=true) {
 // online = false: offline mode
 // ==============================
 function formStatusSet(online) {
-	$('#s_pvk').prop('disabled', online);
-	$('#s_pbk').prop('disabled', true);
-	// $('#s_to').prop('disabled', !online);
-	$('#s_send').prop('disabled', !online);
-	$('#btn_auto').prop('disabled', online);
-	$('#btn_enter').prop('disabled', online);
-	$('#btn_encrypt').prop('disabled', !online);
-	$('#btn_close').prop('disabled', !online);
-	$('#btn_send').prop('disabled', !online);
-	$('#fileSelector').prop('disabled', !online);
+	$('#btn_encrypt').prop('disabled', true);
+	$('#fileSelector').prop('disabled', true);
 }
 // ===========================================
 
@@ -80,13 +72,14 @@ function newSession(server) {
 		var getMsg = JSON.parse(e.data);
 		// console.log(getMsg);
 
+		console.log(getMsg);
 		// -- Server reply "login"
 		if (getMsg.type === 0x00) {
 			console.log(`Server ver: ${getMsg.msg}`);
 		}
 
 		else if (getMsg.type === 0x01) {
-			showMsg(`${getMsg.msg}.`);
+			showMsg(getMsg);
 		}
 	};
 
@@ -102,7 +95,6 @@ function newSession(server) {
 		formStatusSet(false);
 	};
 }
-
 
 // ================================================================
 // Output something in log region. There are 2 typical situations:
@@ -124,77 +116,23 @@ function showMsg(msg, color="black") {
 	var notice = true;
 
 	if (typeof(msg) === 'object') {
-		var now = new Date(parseInt(msg.time));
-		strFrom = (function () {
-			if (msg.from.indexOf('->') === -1) {
-				return `<a href="javascript:addReceiverFromSession('${msg.from}')">${msg.from}</a>`;
-			} else {
-				return msg.from;
-			}
-		})();
-
-		// -- Not in encrypt mode or the message is from the user
-		if (encryptMode === false || color === 'green') {
-			var strHead = `${now.toString()}<br>[${strFrom}]<br>`;
-			showText = `${strHead}<font color="${color}">${xssAvoid(msg.msg).split('\n').join('<br>')}</font><br>`;
-		
-		// -- In encrypt mode
-		} else {
-			var strHead = `${now.toString()}<br>[🔒${msg.from}]<br>`;
-			showText = `${strHead}<font color="${color}">${xssAvoid(rsaDecrypt(msg.msg, selfPrivateKey)).split('\n').join('<br>')}</font><br>`;
-		}
-
-		// -- Message with image
-		if (msg['img'] != undefined) {
-
-			// -- Whole file (without spliting)
-			if (msg['rest'] === undefined) {
-
-				if (encryptMode === false || color === 'green') {
-					showText += `<img src="${msg.img}" width="200"><br>`;
-				} else {
-					showText += `<img src="${rsaDecrypt(msg.img, selfPrivateKey, true)}" width="200"><br>`;
-				}
-				showText += '<br>';
-				log.prepend(showText);
-
-			// -- Sliced file
-			} else {
-
-				if (buffer[msg.sign] == undefined) {
-					showMsg(`Receiving an image from<br>${msg.from}<br><progress id="${msg.sign}" value="${msg.size[0]/msg.size[1]}">0%</progress>`, 'gray');
-					buffer[msg.sign] = rsaDecrypt(msg.img, selfPrivateKey, encryptMode);
-				} else {
-					buffer[msg.sign] += rsaDecrypt(msg.img, selfPrivateKey, encryptMode);
-					$(`#${msg.sign}`).val(msg.size[0]/msg.size[1]);
-					notice = false;
-				}
-
-				// -- Transfer finished
-				if (msg['rest'] <= 0) {
-					showText += `<img src="${buffer[msg.sign]}" width="200"><br>`;
-					showText += '<br>';
-					log.prepend(showText);
-					delete(buffer[msg.sign]);					// Clean buffer
-				}
-			}
-
+		// var now = new Date(parseInt(msg.time));
+		var now = new Date(msg.time);
 		// -- Text message
-		} else {
-			showText += '<br>';
-			log.prepend(showText);
-		}
+		showText = msgPop (msg.ch, msg.from, now, msg.msg, msg.verified, msg.timeCheck);
+		log.prepend(showText);
+	
 
-		// -- Show the notification
-		if(document.hidden && Notification.permission === "granted" && notice) {
-			var notification = new Notification('henChat', {
-				body: 'New message comes!',
-			});
+		// // -- Show the notification
+		// if(document.hidden && Notification.permission === "granted" && notice) {
+		// 	var notification = new Notification('henChat', {
+		// 		body: 'New message comes!',
+		// 	});
 
-			notification.onclick = function() {
-				window.focus();
-			};
-		}
+		// 	notification.onclick = function() {
+		// 		window.focus();
+		// 	};
+		// }
 
 	// -- msg is plain text
 	} else {

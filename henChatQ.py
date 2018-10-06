@@ -1,6 +1,10 @@
 import json
 import multiprocessing
 import threading
+import os
+import http.server
+import socketserver
+import webbrowser
 
 from ws.websocket_server import WebsocketServer
 import init, rx, tx
@@ -44,6 +48,7 @@ class HCS:
 		#  'ch': 'xxx',
 		#  'psk': b'xxx'}
 		elif cmd['type'] == 0x03:
+			print(cmd)
 			print('Listen on channel: [%s]' % cmd['ch'])
 			# if cmd['ch'] in self.channels == False:
 			self.channels.append(cmd['ch'])
@@ -68,9 +73,24 @@ class HCS:
 		server.set_fn_message_received(self.commandReceived)
 		server.run_forever()
 
+def httpServer(port=54321):
+	Handler = http.server.SimpleHTTPRequestHandler
+	with socketserver.TCPServer(('127.0.0.1', port), Handler) as httpd:
+		print('serving at port', port)
+		httpd.serve_forever()
+
 def main():
-	hcs = HCS(43210)
-	hcs.start()
+	def hcs_start():
+		hcs = HCS(43210)
+		hcs.start()
+	p1 = multiprocessing.Process(target=httpServer)
+	p1.start()
+	webbrowser.open('http://localhost:54321')
+	hcs_start()
+	
 
 if __name__ == '__main__':
+	if os.path.exists('user.conf') == False:
+		newUser = input('Create a new user: ')
+		init.initNew(newUser)
 	main()
