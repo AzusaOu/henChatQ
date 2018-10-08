@@ -10,11 +10,12 @@ import base64
 
 import paho.mqtt.client as mqtt
 
+from const import *
 import alib3.acrypt as acrypt
 from alib3.acrypt import RSAUtilize
 
-USER = pickle.load(open('user.conf', 'rb'))
-SERVER = json.load(open('server.json', 'r'))
+USER = pickle.load(open(PATH.PATH_USER, 'rb'))
+SERVER = json.load(open(PATH.SETTING_SERVER, 'r'))
 
 # Message formate:
 # +----+----+----+----+--------+--------------------+
@@ -44,11 +45,11 @@ def msgGen(stype, content, PSK):
     # Plain text
     if stype == '-t':
         content = content.encode('utf-8')
-        b_stype = b'\x00'
+        b_stype = STYPE.PLAINTEXT
 
     # File
     elif stype == '-f':
-        b_stype = b'\x01'
+        b_stype = STYPE.FILE
         addition = base64.b64encode(os.path.split(content)[-1].encode('utf-8'))
         if len(addition) > 32:
             addition = addition[-32:]
@@ -59,7 +60,7 @@ def msgGen(stype, content, PSK):
 
     # Add address
     elif stype == '-a':
-        b_stype = b'\x02'
+        b_stype = STYPE.FOLLOW
         content = pickle.dumps(USER['pvk'])
 
     md5_msg = acrypt.str2md5(timeStamp + content)

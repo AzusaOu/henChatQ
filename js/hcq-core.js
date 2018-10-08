@@ -76,6 +76,8 @@ function newSession(server) {
 		// -- Server reply "login"
 		if (getMsg.type === 0x00) {
 			console.log(`Server ver: ${getMsg.msg}`);
+			chListening = getMsg.chs
+			console.log(chListening)
 		}
 
 		else if (getMsg.type === 0x01) {
@@ -117,9 +119,9 @@ function showMsg(msg, color="black") {
 
 	if (typeof(msg) === 'object') {
 		// var now = new Date(parseInt(msg.time));
-		var now = new Date(msg.time);
+		var now = new Date();
 		// -- Text message
-		showText = msgPop (msg.ch, msg.from, now, msg.msg, msg.verified, msg.timeCheck);
+		showText = msgPop (msg.ch, msg.from, now.toString(), msg.msg, msg.verified, msg.timeCheck);
 		log.prepend(showText);
 	
 

@@ -12,11 +12,11 @@ import multiprocessing
 from websocket import create_connection
 import paho.mqtt.client as mqtt
 
+from const import *
 import alib3.acrypt as acrypt
 from alib3.acrypt import RSAUtilize
 
-SERVER = json.load(open('server.json', 'r'))
-PATH_FRIENDS = './friends/'
+SERVER = json.load(open(PATH.SETTING_SERVER, 'r'))
 
 # Message formate:
 # +----+----+----+----+--------+--------------------+
@@ -101,7 +101,7 @@ class Client():
 
         payload = msg[331:]
 
-        idFile = PATH_FRIENDS + '%s@%s' % (sender, self.channel)
+        idFile = PATH.PATH_FRIENDS + '%s@%s' % (sender, self.channel)
         if os.path.exists(idFile) == False:
             logging.warning('*** UNKNOWN USER ***')
         else:
@@ -167,13 +167,7 @@ class Client():
     def loop(self):
         self.client.loop_forever()
 
-chs = []
-
 def recvStart(ch, psk=b'henChatQ'):
-    if ch in chs:
-        logging.error('Channel [%s] has been listened.' % ch)
-        return -1
-    chs.append(ch)
     print('Listening on %s:%d...' % (SERVER['host'], SERVER['port']))
     try:
         c = Client(SERVER['host'], SERVER['port'], SERVER['timeout'], psk)

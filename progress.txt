@@ -1,0 +1,8 @@
+[181007] Message pop
+Channel adding
+Choose existed channel to listen
+* Delete channel
+Sending message (plain text)
+ |- Choose the Channel
+ |- Send to the choosen Channel
+ |- Show my message pop on the right

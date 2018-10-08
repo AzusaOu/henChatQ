@@ -6,31 +6,39 @@ import http.server
 import socketserver
 import webbrowser
 
+from const import *
 from ws.websocket_server import WebsocketServer
 import init, rx, tx
 
 VERSION = '181005'
+SETTING = json.load(open('server.json', 'r'))
 
 class HCS:
 	def __init__(self, port, host='127.0.0.1'):
 		self.host = host
 		self.port = port
 		self.client_interface = None
-		self.channels = []
+		if os.path.exists(PATH.INFO_CHANNELS):
+			self.channels = json.load(open(PATH.INFO_CHANNELS, 'r'))
+			for ch in self.channels.keys():
+				th = threading.Thread(target=rx.recvStart, name='ch-%s'%ch, args=(ch, self.channels[ch].encode('utf-8')))
+				th.start()
+		else:
+			self.channels = {}
 
 	def commandReceived(self, client, server, msg):
 		cmd = json.loads(msg)
 
 		# Interface online
-		if cmd['type'] == 0x00:
+		if cmd['type'] == API_CMD_IN.ONLINE:
 			print('Interface online.')
 			self.client_interface = client
-			reply = json.dumps({'type': 0x00, 'msg': 'henChatQ.v%s'%VERSION})
+			reply = json.dumps({'type': API_CMD_OUT.LOGIN, 'msg': 'henChatQ.v%s'%VERSION, 'chs': self.channels})
 			server.send_message(self.client_interface, reply)
 
 		# Create new user
 		# {'type': 0x01, 'username': 'xxx'}
-		if cmd['type'] == 0x01:
+		if cmd['type'] == API_CMD_IN.NEWUSER:
 			init.initNew(cmd['username'])
 		
 		# Send a message
@@ -40,30 +48,33 @@ class HCS:
 		#  'msg': 'xxx',
 		#  'psk': 'xxx',
 		#  'qos': 1}
-		elif cmd['type'] == 0x02:
+		elif cmd['type'] == API_CMD_IN.SEND:
 			tx.sendMsg(cmd['ch'], cmd['stype'], cmd['msg'], cmd['psk'], cmd['qos'])
 
 		# Listen on a channel
 		# {'type': 0x03,
 		#  'ch': 'xxx',
 		#  'psk': b'xxx'}
-		elif cmd['type'] == 0x03:
+		elif cmd['type'] == API_CMD_IN.LISTEN:
 			print(cmd)
+			if cmd['ch'] in self.channels.keys():
+				print('You have already listened on the channel!')
+				return -1
 			print('Listen on channel: [%s]' % cmd['ch'])
-			# if cmd['ch'] in self.channels == False:
-			self.channels.append(cmd['ch'])
+			self.channels[cmd['ch']] = cmd['psk']
+			json.dump(self.channels, open(PATH.INFO_CHANNELS, 'w'))
 			th = threading.Thread(target=rx.recvStart, name='ch-%s'%cmd['ch'], args=(cmd['ch'], cmd['psk'].encode('utf-8')))
 			th.start()
-			# p.join()
 		
 		# New message comes
 		# {'type': 0x04,
 		#  'ch': 'xxx',
 		#  'from': 'xxx',
 		#  'msg': 'xxx'}
-		elif cmd['type'] == 0x04:
+		elif cmd['type'] == RX_CMD.MSG:
 			if self.client_interface:
-				packet = json.dumps({'type': 0x01, 'ch': cmd['ch'], 'from': cmd['from'], 'msg': cmd['msg']})
+				cmd['type'] = API_CMD_OUT.TEXTMSG
+				packet = json.dumps(cmd)
 				server.send_message(self.client_interface, packet)
 			else:
 				print('Receive a message from %s. Content:\n%s' % (cmd['ch'], cmd['from'], cmd['msg']))
@@ -75,17 +86,17 @@ class HCS:
 
 def httpServer(port=54321):
 	Handler = http.server.SimpleHTTPRequestHandler
-	with socketserver.TCPServer(('127.0.0.1', port), Handler) as httpd:
+	with socketserver.TCPServer((SETTING['web_host'], port), Handler) as httpd:
 		print('serving at port', port)
 		httpd.serve_forever()
 
 def main():
 	def hcs_start():
-		hcs = HCS(43210)
+		hcs = HCS(SETTING['local_port'])
 		hcs.start()
 	p1 = multiprocessing.Process(target=httpServer)
 	p1.start()
-	webbrowser.open('http://localhost:54321')
+	webbrowser.open('http://%s:%d' % (SETTING['web_host'], SETTING['web_port']))
 	hcs_start()
 	
 

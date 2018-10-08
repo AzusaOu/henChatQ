@@ -207,13 +207,11 @@ document.onkeydown = function (e) {
 }
 
 // ===== Add Contacts ===============================
-var channels = [];
 function addChannel() {
 	var newChannel = $('#s_newChannel').val();
-	if (newChannel === '' || channels.indexOf(newChannel) != -1) {
+	if (newChannel === '') {
 		return -1;
 	}
-	channels.push(newChannel);
 	$('#receiverChoice').prepend(`<input type="checkbox" id="${newChannel}" checked="checked"/>${newChannel}<br>`);
 	$('#s_newChannel').val('');
 	var cmd = {

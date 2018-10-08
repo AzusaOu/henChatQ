@@ -1,0 +1,18 @@
+.pop_channel{
+	color: blue;
+	font-size: small;
+}
+
+.pop_sender{
+	font-size: small;
+}
+
+.pop_time{
+	color: black;
+	font-size: small;
+}
+
+.pop_content{
+	color: black;
+	font-size: medium;
+}

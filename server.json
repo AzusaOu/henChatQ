@@ -3,5 +3,7 @@
     "port": 1883,
     "timeout": 60,
     "local_host": "127.0.0.1",
-    "local_port": 43210
+    "local_port": 43210,
+    "web_host": "127.0.0.1",
+    "web_port": 54321
 }
