@@ -83,6 +83,7 @@ class Client():
             msg = gzip.decompress(acrypt.AES256.decrypt(msg.payload, self.psk))
         except:
             logging.error('*** PSK ERROR ***')
+            print(self.psk)
             print('')
             return -1
         sender = msg[:32].replace(b'\x99', b'').decode('utf-8')

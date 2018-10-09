@@ -4,7 +4,7 @@ var DEFAULT_SERVER = 'ws://localhost:43210';
 
 var ws;		// Websocket
 
-var listeningOn = [];
+var listeningOn = {};
 
 newSession(DEFAULT_SERVER)
 
@@ -82,13 +82,13 @@ function newSession(server) {
 			chListening = getMsg.chs
 			// console.log(chListening)
 			for (ch in chListening) {
-				ch = b64DecodeUnicode(ch);
-				$('#channels').append(ui_channel(ch, chListening[ch]));
-				$('#sl_to').append(`<option value="${ch}" selected>${ch}</option>`);
+				ch_p = b64DecodeUnicode(ch);
+				$('#channels').append(ui_channel(ch_p, chListening[ch]));
+				$('#sl_to').append(`<option value="${ch}" selected>${ch_p}</option>`);
 			}
 		}
 
-		else if (getMsg.type === 0x01 && listeningOn.indexOf(getMsg.ch) > -1) {
+		else if (getMsg.type === 0x01 && (getMsg.ch in listeningOn)) {
 			showMsg(getMsg);
 		}
 	};
@@ -129,7 +129,7 @@ function showMsg(msg, color="black") {
 		// var now = new Date(parseInt(msg.time));
 		var now = new Date();
 		// -- Text message
-		showText = ui_msgPop (msg.ch, msg.from, now.toString(), msg.msg, msg.verified, msg.timeCheck);
+		showText = ui_msgPop (b64DecodeUnicode(msg.ch), msg.from, now.toString(), b64DecodeUnicode(msg.msg), msg.verified, msg.timeCheck);
 		log.prepend(showText);
 	
 

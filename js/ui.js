@@ -7,7 +7,7 @@ function ui_msgPop (ch, user, time, content, verified=false, timeCheck=true) {
   if (!timeCheck) {
     warning = '*** ERROR TIMESTAMP ***<br>';
   }
-  return `<table width="80%" border="1" cellspacing="1" bordercolor="#999999" bgcolor="#999999">
+  return `<table width="60%" border="1" cellspacing="1" bordercolor="#999999" bgcolor="#999999">
     <tr>
       <td bgcolor="#CCCCCC"><table width="100%" border="0">
         <tr bgcolor="#CCCCCC">
@@ -26,25 +26,26 @@ function ui_msgPop (ch, user, time, content, verified=false, timeCheck=true) {
 }
 
 function ui_channel (ch, psk, checked=false) {
+  ch64 = b64EncodeUnicode(ch)
   return `<table width="100%" border="1" cellspacing="0" bordercolor="#999999">
   <tr><td>
-  <table width="100%" cellspacing="1" border="0" bgcolor="#F0F0F0" id="box_${ch}">
+  <table width="100%" cellspacing="1" border="0" bgcolor="#F0F0F0" id="box_${ch64}">
   <tr>
-    <td width="100%">${ch}</td>
+    <td width="100%">${ch}<div id=psk_${ch64} style="display:none">${psk}</div></td>
     <td width="5%" rowspan="2" nowrap>Listen
-    <input type="checkbox" id="ch_${ch}" value="checkbox" onclick="javascript:_channel_clicked('${ch}')"></td>
+    <input type="checkbox" id="ch_${ch64}" value="checkbox" onclick="javascript:_channel_clicked('${ch64}')"></td>
   </tr>
   </table></td>
   </tr>
   </table>`;
 }
 
-function _channel_clicked (ch) {
-  if ($(`#ch_${ch}`)[0].checked) {
-    listeningOn.push(ch);
-    $(`#box_${ch}`)[0].bgColor = '#00FF66';
+function _channel_clicked (ch64) {
+  if ($(`#ch_${ch64}`)[0].checked) {
+    listeningOn[ch64] = $(`#psk_${ch64}`).val();
+    $(`#box_${ch64}`)[0].bgColor = '#00FF66';
   } else {
-    listeningOn.splice(listeningOn.indexOf(ch), 1);
-    $(`#box_${ch}`)[0].bgColor = '#F0F0F0';
+    delete(listeningOn[ch64])
+    $(`#box_${ch64}`)[0].bgColor = '#F0F0F0';
   }
 }

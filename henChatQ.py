@@ -6,9 +6,14 @@ import http.server
 import socketserver
 import webbrowser
 
+if os.path.exists('user.conf') == False:
+	newUser = input('Create a new user: ')
+	import init
+	init.initNew(newUser)
+
 from const import *
 from ws.websocket_server import WebsocketServer
-import init, rx, tx
+import rx, tx
 
 VERSION = '181005'
 SETTING = json.load(open('server.json', 'r'))
@@ -28,6 +33,7 @@ class HCS:
 
 	def commandReceived(self, client, server, msg):
 		cmd = json.loads(msg)
+		print(cmd)
 
 		# Interface online
 		if cmd['type'] == API_CMD_IN.ONLINE:
@@ -107,7 +113,4 @@ def main():
 	
 
 if __name__ == '__main__':
-	if os.path.exists('user.conf') == False:
-		newUser = input('Create a new user: ')
-		init.initNew(newUser)
 	main()

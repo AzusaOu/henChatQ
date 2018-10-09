@@ -14,7 +14,7 @@ def initNew(username):
     pbk, pvk = r.get()
 
     J = {
-        'user': username,
+        'user': username.encode('utf-8'),
         'pbk': pbk,
         'pvk': pvk
     }
