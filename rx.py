@@ -119,7 +119,7 @@ class Client():
                 logging.error('*** FAKE USER ***\n')
                 return -1
         
-        if stype == b'\x00':
+        if stype == STYPE.PLAINTEXT:
             print('=== PLAIN TEXT ===')
             origin = payload.decode('utf-8')
             print(origin+'\n')
@@ -134,13 +134,13 @@ class Client():
                 )
             self.wsNotification(toInterface)
         
-        elif stype == b'\x01':
+        elif stype == STYPE.FILE:
             print('=== FILE ===')
             fname = base64.b64decode(addition)
             print('Name: %s' % fname.decode('utf-8'))
             writeout(fname, payload)
         
-        elif stype == b'\x02':
+        elif stype == STYPE.FOLLOW:
             print('=== FOLLOWING REQUEST ===')
             if os.path.exists(idFile) == False:
                 print('Channel: %s' % self.channel)

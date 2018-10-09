@@ -4,6 +4,8 @@ var DEFAULT_SERVER = 'ws://localhost:43210';
 
 var ws;		// Websocket
 
+var listeningOn = [];
+
 newSession(DEFAULT_SERVER)
 
 function getCookie(key) {
@@ -76,11 +78,17 @@ function newSession(server) {
 		// -- Server reply "login"
 		if (getMsg.type === 0x00) {
 			console.log(`Server ver: ${getMsg.msg}`);
+			console.log(`Server host: ${getMsg.server}`);
 			chListening = getMsg.chs
-			console.log(chListening)
+			// console.log(chListening)
+			for (ch in chListening) {
+				ch = b64DecodeUnicode(ch);
+				$('#channels').append(ui_channel(ch, chListening[ch]));
+				$('#sl_to').append(`<option value="${ch}" selected>${ch}</option>`);
+			}
 		}
 
-		else if (getMsg.type === 0x01) {
+		else if (getMsg.type === 0x01 && listeningOn.indexOf(getMsg.ch) > -1) {
 			showMsg(getMsg);
 		}
 	};
@@ -121,20 +129,20 @@ function showMsg(msg, color="black") {
 		// var now = new Date(parseInt(msg.time));
 		var now = new Date();
 		// -- Text message
-		showText = msgPop (msg.ch, msg.from, now.toString(), msg.msg, msg.verified, msg.timeCheck);
+		showText = ui_msgPop (msg.ch, msg.from, now.toString(), msg.msg, msg.verified, msg.timeCheck);
 		log.prepend(showText);
 	
 
-		// // -- Show the notification
-		// if(document.hidden && Notification.permission === "granted" && notice) {
-		// 	var notification = new Notification('henChat', {
-		// 		body: 'New message comes!',
-		// 	});
+		// -- Show the notification
+		if(document.hidden && Notification.permission === "granted" && notice) {
+			var notification = new Notification('henChat', {
+				body: 'New message comes!',
+			});
 
-		// 	notification.onclick = function() {
-		// 		window.focus();
-		// 	};
-		// }
+			notification.onclick = function() {
+				window.focus();
+			};
+		}
 
 	// -- msg is plain text
 	} else {

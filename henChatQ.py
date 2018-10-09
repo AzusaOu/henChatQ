@@ -33,7 +33,12 @@ class HCS:
 		if cmd['type'] == API_CMD_IN.ONLINE:
 			print('Interface online.')
 			self.client_interface = client
-			reply = json.dumps({'type': API_CMD_OUT.LOGIN, 'msg': 'henChatQ.v%s'%VERSION, 'chs': self.channels})
+			reply = json.dumps(
+				{'type': API_CMD_OUT.LOGIN,
+				'msg': 'henChatQ.v%s'%VERSION,
+				'chs': self.channels,
+				'server': '%s:%d' % (SETTING['host'], SETTING['port'])}
+				)
 			server.send_message(self.client_interface, reply)
 
 		# Create new user
@@ -49,7 +54,7 @@ class HCS:
 		#  'psk': 'xxx',
 		#  'qos': 1}
 		elif cmd['type'] == API_CMD_IN.SEND:
-			tx.sendMsg(cmd['ch'], cmd['stype'], cmd['msg'], cmd['psk'], cmd['qos'])
+			tx.sendMsg(cmd['ch'], cmd['stype'], cmd['msg'], cmd['psk'].encode(), cmd['qos'])
 
 		# Listen on a channel
 		# {'type': 0x03,
@@ -57,6 +62,7 @@ class HCS:
 		#  'psk': b'xxx'}
 		elif cmd['type'] == API_CMD_IN.LISTEN:
 			print(cmd)
+			cmd['ch'] = cmd['ch']
 			if cmd['ch'] in self.channels.keys():
 				print('You have already listened on the channel!')
 				return -1

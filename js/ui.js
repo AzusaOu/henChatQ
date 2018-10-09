@@ -1,4 +1,4 @@
-function msgPop (ch, user, time, content, verified=false, timeCheck=true) {
+function ui_msgPop (ch, user, time, content, verified=false, timeCheck=true) {
   var userColor = '#000000';
   var warning = '';
   if (verified) {
@@ -25,15 +25,26 @@ function msgPop (ch, user, time, content, verified=false, timeCheck=true) {
   </table><br>`;
 }
 
-function channel (ch, psk) {
-  return `<table width="100%" border="0" bgcolor="#F0F0F0">
+function ui_channel (ch, psk, checked=false) {
+  return `<table width="100%" border="1" cellspacing="0" bordercolor="#999999">
+  <tr><td>
+  <table width="100%" cellspacing="1" border="0" bgcolor="#F0F0F0" id="box_${ch}">
   <tr>
     <td width="100%">${ch}</td>
     <td width="5%" rowspan="2" nowrap>Listen
-    <input type="checkbox" id="ch_${ch}" value="checkbox"></td>
+    <input type="checkbox" id="ch_${ch}" value="checkbox" onclick="javascript:_channel_clicked('${ch}')"></td>
   </tr>
-  <tr>
-    <td>PSK: ${psk}}</td>
+  </table></td>
   </tr>
   </table>`;
+}
+
+function _channel_clicked (ch) {
+  if ($(`#ch_${ch}`)[0].checked) {
+    listeningOn.push(ch);
+    $(`#box_${ch}`)[0].bgColor = '#00FF66';
+  } else {
+    listeningOn.splice(listeningOn.indexOf(ch), 1);
+    $(`#box_${ch}`)[0].bgColor = '#F0F0F0';
+  }
 }
