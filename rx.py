@@ -143,6 +143,7 @@ class Client():
         
         elif stype == STYPE.FOLLOW:
             print('=== FOLLOWING REQUEST ===')
+            print(idFile)
             if os.path.exists(idFile) == False:
                 print('Channel: %s' % self.channel)
                 print('   User: %s' % sender)

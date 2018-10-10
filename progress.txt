@@ -4,5 +4,5 @@
 * Delete channel
 Sending message (plain text)
 ./  |- Choose the Channel
- |- Send to the choosen Channel
- |- Show my message pop on the right
+./  |- Send to the choosen Channel
+ X  |- Show my message pop on the right

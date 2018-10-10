@@ -1,4 +1,4 @@
-var CLIENT_VER = '180818';
+var CLIENT_VER = '181010-Beta';
 
 var DEFAULT_SERVER = 'ws://localhost:43210';
 
@@ -6,31 +6,9 @@ var ws;		// Websocket
 
 var listeningOn = {};
 
-newSession(DEFAULT_SERVER)
+var user;
 
-function getCookie(key) {
-	var arr, reg = new RegExp("(^| )"+key+"=([^;]*)(;|$)");
-	if (arr = document.cookie.match(reg)) {
-		return unescape(arr[2]);
-	} else {
-		return null;
-	}
-}
-
-function randomStr(length, symbol=true) {
-	var gen = '';
-	if (symbol) {
-		var charLib = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!#$%&*?@~-';
-	} else {
-		var charLib = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-	}
-	
-	for (var i=0; i<length; i++) {
-		index = Math.round(Math.random() * (charLib.length - 1));
-		gen += charLib[index];
-	}
-	return gen;
-}
+newSession(DEFAULT_SERVER);
 
 // ==============================
 // online = true: online mode
@@ -74,12 +52,12 @@ function newSession(server) {
 		var getMsg = JSON.parse(e.data);
 		// console.log(getMsg);
 
-		console.log(getMsg);
 		// -- Server reply "login"
 		if (getMsg.type === 0x00) {
 			console.log(`Server ver: ${getMsg.msg}`);
 			console.log(`Server host: ${getMsg.server}`);
 			chListening = getMsg.chs
+			user = getMsg.user;
 			// console.log(chListening)
 			for (ch in chListening) {
 				ch_p = b64DecodeUnicode(ch);
@@ -129,9 +107,29 @@ function showMsg(msg, color="black") {
 		// var now = new Date(parseInt(msg.time));
 		var now = new Date();
 		// -- Text message
-		showText = ui_msgPop (b64DecodeUnicode(msg.ch), msg.from, now.toString(), b64DecodeUnicode(msg.msg), msg.verified, msg.timeCheck);
-		log.prepend(showText);
 	
+		if (msg.from === user) {
+			// console.log('Self msg');
+			showText = ui_msgPop(
+				b64DecodeUnicode(msg.ch),
+				xssAvoid(msg.from),
+				now.toString(),
+				xssAvoid(b64DecodeUnicode(msg.msg)),
+				msg.verified,
+				msg.timeCheck,
+				'#efefef'
+			);
+		} else {
+			showText = ui_msgPop(
+				b64DecodeUnicode(msg.ch),
+				xssAvoid(msg.from),
+				now.toString(),
+				xssAvoid(b64DecodeUnicode(msg.msg)),
+				msg.verified,
+				msg.timeCheck
+			);
+		}
+		log.prepend(showText);
 
 		// -- Show the notification
 		if(document.hidden && Notification.permission === "granted" && notice) {
@@ -151,26 +149,26 @@ function showMsg(msg, color="black") {
 }
 
 
-// ================================================================
-// Check the extension of selected file. Available extensions are 
-// defined on the head
-// ================================================================
-function fileExtCheck(fileInputLable, extNames) {
+// // ================================================================
+// // Check the extension of selected file. Available extensions are 
+// // defined on the head
+// // ================================================================
+// function fileExtCheck(fileInputLable, extNames) {
 			
-	var fname = fileInputLable.value;
-	if (!fname) {
-		return false
-	}
-	var fext = fname.slice(-4).toLowerCase();
-	if (extNames.indexOf(fext) != -1) {
-		return true;
-	} else {
-		return false;
-	}
-}
+// 	var fname = fileInputLable.value;
+// 	if (!fname) {
+// 		return false
+// 	}
+// 	var fext = fname.slice(-4).toLowerCase();
+// 	if (extNames.indexOf(fext) != -1) {
+// 		return true;
+// 	} else {
+// 		return false;
+// 	}
+// }
 
 // ===== Init ======================================
 formStatusSet(false);
-$('#s_pvk').val(getCookie('pvk'));
+// $('#s_pvk').val(getCookie('pvk'));
 var fileSelector = document.getElementById('fileSelector');
 // =================================================

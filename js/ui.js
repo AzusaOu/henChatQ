@@ -1,4 +1,4 @@
-function ui_msgPop (ch, user, time, content, verified=false, timeCheck=true) {
+function ui_msgPop (ch, user, time, content, verified=false, timeCheck=true, background='#CCCCCC') {
   var userColor = '#000000';
   var warning = '';
   if (verified) {
@@ -9,11 +9,11 @@ function ui_msgPop (ch, user, time, content, verified=false, timeCheck=true) {
   }
   return `<table width="60%" border="1" cellspacing="1" bordercolor="#999999" bgcolor="#999999">
     <tr>
-      <td bgcolor="#CCCCCC"><table width="100%" border="0">
-        <tr bgcolor="#CCCCCC">
+      <td bgcolor="${background}"><table width="100%" border="0">
+        <tr bgcolor="${background}">
           <td colspan="2" nowrap><span class="pop_channel">${ch}</span></td>
         </tr>
-        <tr bgcolor="#CCCCCC">
+        <tr bgcolor="${background}">
           <td width="25%" nowrap style="color:${userColor}";><span class="pop_sender">${user}</span></td>
           <td width="75%" nowrap><span class="pop_time">${time}</span></td>
         </tr>
@@ -22,7 +22,8 @@ function ui_msgPop (ch, user, time, content, verified=false, timeCheck=true) {
         </tr>
       </table></td>
     </tr>
-  </table><br>`;
+  </table>
+  <br>`;
 }
 
 function ui_channel (ch, psk, checked=false) {

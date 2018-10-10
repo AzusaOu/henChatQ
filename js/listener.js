@@ -12,6 +12,20 @@ $('#btn_send').click(function () {
 	};
 	ws.send(JSON.stringify(cmd));
 });
+
+$('#btn_follow').click(function () {
+	var ch = $('#sl_to').val();
+	var cmd = {
+		'type': 0x02,
+		'ch': ch,
+		'stype': '-a',
+		'msg': '0',
+		'psk': $(`#psk_${ch}`)[0].innerHTML,
+		'qos': 0
+	};
+	ws.send(JSON.stringify(cmd));
+	showMsg('Following request sent.', color="grey")
+});
 			 
 // ===== Key Events ===============================
 

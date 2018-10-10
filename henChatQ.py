@@ -1,10 +1,13 @@
 import json
+import pickle
 import multiprocessing
 import threading
 import os
 import http.server
 import socketserver
 import webbrowser
+
+VERSION = '0.0.0 - Beta'
 
 if os.path.exists('user.conf') == False:
 	newUser = input('Create a new user: ')
@@ -15,8 +18,8 @@ from const import *
 from ws.websocket_server import WebsocketServer
 import rx, tx
 
-VERSION = '181005'
 SETTING = json.load(open('server.json', 'r'))
+USER = pickle.load(open(PATH.PATH_USER, 'rb'))
 
 class HCS:
 	def __init__(self, port, host='127.0.0.1'):
@@ -42,6 +45,7 @@ class HCS:
 			reply = json.dumps(
 				{'type': API_CMD_OUT.LOGIN,
 				'msg': 'henChatQ.v%s'%VERSION,
+				'user': USER['user'].decode(),
 				'chs': self.channels,
 				'server': '%s:%d' % (SETTING['host'], SETTING['port'])}
 				)
