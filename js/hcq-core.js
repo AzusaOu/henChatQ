@@ -1,10 +1,12 @@
-var CLIENT_VER = '181010-Beta';
+var CLIENT_VER = '181011-Beta';
 
-var DEFAULT_SERVER = 'ws://localhost:43210';
+// Must be 127.0.0.1, or would be blocked by Edge
+var DEFAULT_SERVER = 'ws://127.0.0.1:43210';
 
 var ws;		// Websocket
 
-var listeningOn = {};
+var chList = {};
+var chShow = {};
 
 var user;
 
@@ -56,17 +58,12 @@ function newSession(server) {
 		if (getMsg.type === 0x00) {
 			console.log(`Server ver: ${getMsg.msg}`);
 			console.log(`Server host: ${getMsg.server}`);
-			chListening = getMsg.chs
+			chList = getMsg.chs
 			user = getMsg.user;
-			// console.log(chListening)
-			for (ch in chListening) {
-				ch_p = b64DecodeUnicode(ch);
-				$('#channels').append(ui_channel(ch_p, chListening[ch]));
-				$('#sl_to').append(`<option value="${ch}" selected>${ch_p}</option>`);
-			}
+			updateChannels(chList);
 		}
 
-		else if (getMsg.type === 0x01 && (getMsg.ch in listeningOn)) {
+		else if (getMsg.type === 0x01 && (getMsg.ch in chShow)) {
 			showMsg(getMsg);
 		}
 	};
@@ -148,6 +145,14 @@ function showMsg(msg, color="black") {
 	}
 }
 
+function updateChannels (channelList) {
+	$('#channels')[0].innerHTML = '';
+	for (ch in channelList) {
+		ch_p = b64DecodeUnicode(ch);
+		$('#channels').append(ui_channel(ch_p, channelList[ch]));
+		$('#sl_to').append(`<option value="${ch}" selected>${ch_p}</option>`);
+	}
+}
 
 // // ================================================================
 // // Check the extension of selected file. Available extensions are 

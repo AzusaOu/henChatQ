@@ -43,10 +43,10 @@ function ui_channel (ch, psk, checked=false) {
 
 function _channel_clicked (ch64) {
   if ($(`#ch_${ch64}`)[0].checked) {
-    listeningOn[ch64] = $(`#psk_${ch64}`).val();
+    chShow[ch64] = $(`#psk_${ch64}`).val();
     $(`#box_${ch64}`)[0].bgColor = '#00FF66';
   } else {
-    delete(listeningOn[ch64])
+    delete(chShow[ch64])
     $(`#box_${ch64}`)[0].bgColor = '#F0F0F0';
   }
 }

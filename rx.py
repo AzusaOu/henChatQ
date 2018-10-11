@@ -1,7 +1,6 @@
 #-*-coding:utf-8-*-
 # 2018.09.29
 import os
-import logging
 import time
 import pickle
 import json
@@ -15,6 +14,7 @@ import paho.mqtt.client as mqtt
 from const import *
 import alib3.acrypt as acrypt
 from alib3.acrypt import RSAUtilize
+from alib3.abasic import Log
 
 SERVER = json.load(open(PATH.SETTING_SERVER, 'r'))
 
@@ -36,7 +36,7 @@ SERVER = json.load(open(PATH.SETTING_SERVER, 'r'))
 # py hq-recv.py [ch] <PSK>
 # argv           1    2
 
-logging.basicConfig(level=logging.INFO)
+l = Log(Log.DEBUG)
 
 def writeout(fname, raw):
     with open(fname, 'wb') as o:
@@ -53,9 +53,10 @@ class Client():
         self.client.on_message = self.on_message
         self.client.connect(host, port, timeout)
         try:
+            l.info('Creating WebSocket server...')
             self.ws = create_connection(('ws://%s:%s' % (SERVER['local_host'], SERVER['local_port'])))
         except:
-            logging.error('No websocket connection')
+            l.error('No websocket connection')
         self.channel = ''
         self.psk = psk
 
@@ -65,33 +66,33 @@ class Client():
     def updateChannel(self, channel):
         self.channel = channel
         self.client.subscribe(acrypt.str2md5(channel.encode()).decode())
-        logging.info('Tune in channel: [%s]' % channel)
+        l.info('Listening on channel: [%s]' % channel)
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            logging.info('Connect to server successfully')
+            l.info('Connect to server successfully')
         else:
-            logging.error('Server error!')
+            l.error('Server error!')
     
     def on_message(self, client, userdata, msg):
         verified = False
         sameTime = True
 
         timenow = int(time.time())
-        print('%d bytes data received' % int(len(msg.payload) / 8))
+        l.info('%d bytes data received' % int(len(msg.payload) / 8))
         try:
+            l.debug('Decrypting... (PSK=%s)' % self.psk)
             msg = gzip.decompress(acrypt.AES256.decrypt(msg.payload, self.psk))
         except:
-            logging.error('*** PSK ERROR ***')
-            print(self.psk)
-            print('')
+            l.error('*** PSK ERROR ***\n')
             return -1
+
         sender = msg[:32].replace(b'\x99', b'').decode('utf-8')
-        logging.info('New msg from: [%s]' % sender)
+        l.info('Sender: [%s]' % sender)
 
         timeStamp = int(msg[32:42])
         if int(timeStamp - timenow) >= 1800:
-            logging.error('*** INVALID TIMESTAMP ***')
+            l.error('*** INVALID TIMESTAMP ***')
             sameTime = False
     
         sign = msg[42:298]
@@ -103,27 +104,27 @@ class Client():
         payload = msg[331:]
 
         idFile = PATH.PATH_FRIENDS + '%s@%s' % (sender, self.channel)
+        l.debug('Search for key in %s' % idFile)
         if os.path.exists(idFile) == False:
-            logging.warning('*** UNKNOWN USER ***')
+            l.warning('*** UNKNOWN USER ***')
         else:
             try:
                 recv_md5 = RSAUtilize.decrypt(pickle.load(open(idFile, 'rb')), sign)
                 calc_md5 = acrypt.str2md5(msg[32:42] + payload)
                 if recv_md5 != calc_md5:
-                    logging.error('*** SIGNATURE VERIFY FAILED ***\n')
+                    l.error('*** SIGNATURE VERIFY FAILED ***')
                     print(recv_md5)
                     print(calc_md5)
                     return -1
                 else:
                     verified = True
             except:
-                logging.error('*** FAKE USER ***\n')
+                l.error('*** FAKE USER ***')
                 return -1
         
         if stype == STYPE.PLAINTEXT:
-            print('=== PLAIN TEXT ===')
             origin = payload.decode('utf-8')
-            print(origin+'\n')
+            l.msg(origin, 'MSG')
             toInterface = json.dumps(
                 {'type': 0x04,
                 'ch': self.channel,
@@ -132,17 +133,17 @@ class Client():
                 'msg': origin,
                 'verified': verified,
                 'timeCheck': sameTime}
-                )
+            )
             self.wsNotification(toInterface)
         
         elif stype == STYPE.FILE:
-            print('=== FILE ===')
+            # print('=== FILE ===')
             fname = base64.b64decode(addition)
             print('Name: %s' % fname.decode('utf-8'))
             writeout(fname, payload)
         
         elif stype == STYPE.FOLLOW:
-            print('=== FOLLOWING REQUEST ===')
+            # print('=== FOLLOWING REQUEST ===')
             print(idFile)
             if os.path.exists(idFile) == False:
                 print('Channel: %s' % self.channel)
@@ -161,22 +162,22 @@ class Client():
                 )
                 self.wsNotification(toInterface)
             else:
-                logging.info('You have added [%s]. Ignore' % sender)
+                l.info('You have added [%s]. Ignore' % sender)
         else:
+            l.warn('*** UNKNOWN MESSAGE TYPE ***')
             print(msg)
-        print('')
 
     def loop(self):
         self.client.loop_forever()
 
 def recvStart(ch, psk=b'henChatQ'):
-    print('Listening on %s:%d...' % (SERVER['host'], SERVER['port']))
+    l.info('Listening on %s:%d...' % (SERVER['host'], SERVER['port']))
     try:
         c = Client(SERVER['host'], SERVER['port'], SERVER['timeout'], psk)
         c.updateChannel(ch)
         c.loop()
     except:
-        logging.error('*** ERROR PARAMETER ***')
+        l.error('*** ERROR PARAMETER ***')
 
 if __name__ == '__main__':
     import sys

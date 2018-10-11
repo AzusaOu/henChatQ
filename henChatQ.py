@@ -1,25 +1,39 @@
+# 181010 - 1st live
+
 import json
 import pickle
-import multiprocessing
+## Do not use multiprocessing, or the .exe will be abnormal
+# import multiprocessing
 import threading
 import os
 import http.server
 import socketserver
 import webbrowser
+import sys
 
-VERSION = '0.0.0 - Beta'
+VERSION = '0.0.1 - Beta'
+
+bin_path = os.path.split(sys.argv[0])[:-1]
+if len(bin_path) > 1:
+	if os.name == 'nt':
+		os.chdir('\\'.join(bin_path))
+	else:
+		os.chdir('/'.join(bin_path))
 
 if os.path.exists('user.conf') == False:
 	newUser = input('Create a new user: ')
 	import init
 	init.initNew(newUser)
 
+from alib3.abasic import Log
 from const import *
 from ws.websocket_server import WebsocketServer
 import rx, tx
 
 SETTING = json.load(open('server.json', 'r'))
 USER = pickle.load(open(PATH.PATH_USER, 'rb'))
+
+l = Log(Log.DEBUG)
 
 class HCS:
 	def __init__(self, port, host='127.0.0.1'):
@@ -36,11 +50,11 @@ class HCS:
 
 	def commandReceived(self, client, server, msg):
 		cmd = json.loads(msg)
-		print(cmd)
+		# print(cmd)
 
 		# Interface online
 		if cmd['type'] == API_CMD_IN.ONLINE:
-			print('Interface online.')
+			l.info('Interface online')
 			self.client_interface = client
 			reply = json.dumps(
 				{'type': API_CMD_OUT.LOGIN,
@@ -71,16 +85,16 @@ class HCS:
 		#  'ch': 'xxx',
 		#  'psk': b'xxx'}
 		elif cmd['type'] == API_CMD_IN.LISTEN:
-			print(cmd)
+			# print(cmd)
 			cmd['ch'] = cmd['ch']
 			if cmd['ch'] in self.channels.keys():
-				print('You have already listened on the channel!')
+				l.error('You have already listened on the channel!')
 				return -1
-			print('Listen on channel: [%s]' % cmd['ch'])
 			self.channels[cmd['ch']] = cmd['psk']
 			json.dump(self.channels, open(PATH.INFO_CHANNELS, 'w'))
 			th = threading.Thread(target=rx.recvStart, name='ch-%s'%cmd['ch'], args=(cmd['ch'], cmd['psk'].encode('utf-8')))
 			th.start()
+			
 		
 		# New message comes
 		# {'type': 0x04,
@@ -93,7 +107,7 @@ class HCS:
 				packet = json.dumps(cmd)
 				server.send_message(self.client_interface, packet)
 			else:
-				print('Receive a message from %s. Content:\n%s' % (cmd['ch'], cmd['from'], cmd['msg']))
+				l.info('Receive a message from %s. Content:\n%s' % (cmd['ch'], cmd['from'], cmd['msg']))
 
 	def start(self):
 		server = WebsocketServer(self.port, host=self.host)
@@ -103,16 +117,17 @@ class HCS:
 def httpServer(port=54321):
 	Handler = http.server.SimpleHTTPRequestHandler
 	with socketserver.TCPServer((SETTING['web_host'], port), Handler) as httpd:
-		print('serving at port', port)
+		l.info('HTTP serving at port %d' % port)
 		httpd.serve_forever()
 
 def main():
 	def hcs_start():
 		hcs = HCS(SETTING['local_port'])
 		hcs.start()
-	p1 = multiprocessing.Process(target=httpServer)
-	p1.start()
-	webbrowser.open('http://%s:%d' % (SETTING['web_host'], SETTING['web_port']))
+	if SETTING['front'] == 'web':
+		p1 = threading.Thread(target=httpServer)
+		p1.start()
+		webbrowser.open('http://%s:%d' % (SETTING['web_host'], SETTING['web_port']))
 	hcs_start()
 	
 
