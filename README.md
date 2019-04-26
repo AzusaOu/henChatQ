@@ -1,6 +1,6 @@
 # henChatQ
 
-**henChatQ** is a simplified communication application without a customized server. It is based on MQTT protocol, and can send/receive messages to/from any MQTT broker deployed on the Internet.
+**This project is abandoned. For the newest, look at [henChatQ.js](https://github.com/SiOnOu/henChatQ.js).** **henChatQ** is a simplified communication application without a customized server. It is based on MQTT protocol, and can send/receive messages to/from any MQTT broker deployed on the Internet.
 
 ## Quick start ##
 There are two ways to launch henChatQ:
@@ -37,4 +37,4 @@ Messages that HCQ sends/receives looks like this:
 * addition: reserve space, len = 32
 * payload: body of the message
 
-Safety of the message is insured by pre-shared key (PSK). Users should share the key in other ways. 
+Safety of the message is insured by pre-shared key (PSK). Users should share the key in other ways.
